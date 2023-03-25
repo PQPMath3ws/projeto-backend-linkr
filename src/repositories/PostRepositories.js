@@ -67,3 +67,6 @@ export async function insertComment(comment, id_user, id_post) {
 }
 
 
+export async function getMyFollows(id){
+    return await db.query('SELECT f.id_followed_user FROM follows f WHERE id_follower_user = $1;', [id])
+}

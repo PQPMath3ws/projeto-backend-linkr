@@ -1,4 +1,4 @@
-import { deleteLikePost, getPosts, insertComment, insertLikePost, insertPost, getReposts } from '../repositories/PostRepositories.js';
+import { deleteLikePost, getPosts, insertComment, insertLikePost, insertPost, getReposts, getMyFollows } from '../repositories/PostRepositories.js';
 
 
 export async function publishPost(req, res) {
@@ -8,9 +8,9 @@ export async function publishPost(req, res) {
     try {
         await insertPost(id_user, url, description)
         res.sendStatus(201)
-        
 
-    } catch(error){
+
+    } catch (error) {
         console.log(error);
         return res.status(500).send(error);
     }
@@ -25,7 +25,7 @@ export async function likePost(req, res) {
         await insertLikePost(id_user, id_post)
         res.sendStatus(201)
 
-    } catch(error){
+    } catch (error) {
         console.log(error);
         return res.status(500).send(error);
     }
@@ -38,36 +38,39 @@ export async function dislikePost(req, res) {
     try {
         await deleteLikePost(id_user, id_post)
         res.sendStatus(204)
-        
-    } catch(error){
+
+    } catch (error) {
         console.log(error);
         return res.status(500).send(error);
     }
 }
 
-export async function getAllPosts(req, res){
+export async function getAllPosts(req, res) {
+    const id = res.locals.id_user;
     
+
     try {
         const posts = await getPosts();
         const reposts = await getReposts();
 
         let postWithRepost = [];
-        for(let i = 0; i < reposts.rows.length; i++){
+        for (let i = 0; i < reposts.rows.length; i++) {
             let repost = reposts.rows[i];
-            
-            for (let x = 0; x < posts.rows.length; x++){
+
+            for (let x = 0; x < posts.rows.length; x++) {
                 let post = posts.rows[x];
-                if (post.id === repost.id_post){
-                    postWithRepost.push({ id:post.id, 
-                        post: post.post, 
-                        post_url: post.post_url, 
-                        post_date: repost.createdAt, 
+                if (post.id === repost.id_post) {
+                    postWithRepost.push({
+                        id: post.id,
+                        post: post.post,
+                        post_url: post.post_url,
+                        post_date: repost.createdAt,
                         post_user_id: post.post_user_id,
-                        username: post.username, 
-                        user_image: post.user_image, 
-                        likes: post.likes, 
-                        id_liked: post.id_liked, 
-                        names_liked: post.names_liked, 
+                        username: post.username,
+                        user_image: post.user_image,
+                        likes: post.likes,
+                        id_liked: post.id_liked,
+                        names_liked: post.names_liked,
                         comments_count: post.comments_count,
                         allcomments: post.allcomments,
                         reposts: post.reposts,
@@ -78,19 +81,35 @@ export async function getAllPosts(req, res){
             }
         }
 
+        const myFollows = await getMyFollows(id);
+        
         let results = postWithRepost.concat(posts.rows)
 
-        results.sort(function(a, b) {
-            return new Date(b.post_date) - new Date(a.post_date);
-          });
+        let newResults = [];
 
-        return res.status(200).send(results.slice(0, 20))
+        for (let j = 0; j < myFollows.rows.length; j++) {
+            let idIFollow = myFollows.rows[j];
+            
+            for (let z = 0; z < results.length; z++) {
+                if (results[z].post_user_id === idIFollow.id_followed_user || results[z].repostedById === idIFollow.id_followed_user) {
+                    newResults.push(results[z])
+                }
+            }
 
-        
-    } catch(error){
-        console.log(error);
-        return res.status(500).send(error);
-    }
+        }
+
+        newResults.sort(function (a, b) {
+        return new Date(b.post_date) - new Date(a.post_date);
+    });
+
+
+    return res.status(200).send(newResults.slice(0, 20))
+
+
+} catch (error) {
+    console.log(error);
+    return res.status(500).send(error);
+}
 
 }
 

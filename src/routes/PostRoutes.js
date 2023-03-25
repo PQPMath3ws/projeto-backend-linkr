@@ -12,7 +12,7 @@ const PostsRoutes = Router();
 PostsRoutes.post('/post', validateSchema(postSchema), validateToken, publishPost);
 PostsRoutes.post('/post/:id/like',validateToken, verifyIfPostExists, likePost);
 PostsRoutes.delete('/post/:id/dislike', validateToken, verifyIfPostExists, dislikePost);
-PostsRoutes.get('/posts', getAllPosts)
+PostsRoutes.get('/posts', validateToken, getAllPosts)
 PostsRoutes.post('/comment/:id', validateSchema(commentSchema), validateToken, verifyIfPostExists, insertNewComment)
 
 export default PostsRoutes
